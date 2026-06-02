@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chinese Pronunciation Coach</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e9ecef;
+            --success: #00b4d8;
+            --danger: #ff4d6d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .app-card {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #00b4d8;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .zh-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 22px;
+            background: #0f3460;
+            border: 2px solid #1f4068;
+            border-radius: 12px;
+            color: #fff;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .zh-input:focus {
+            border-color: var(--success);
+            box-shadow: 0 0 10px rgba(0, 180, 216, 0.3);
+        }
+
+        .mic-btn {
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            border: none;
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 180, 216, 0.4);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .mic-btn.recording {
+            background: linear-gradient(135deg, #ff4d6d, #ff0055);
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 5px 15px rgba(255, 77, 109, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .btn-text {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+
+        .comparison-zone {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .comparison-zone.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .word-card {
+            background: #0f3460;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid transparent;
+        }
+
+        .word-card.target {
+            border-color: #3a86ff;
+        }
+
+        .word-card.result-match {
+            border-color: var(--success);
+        }
+
+        .word-card.result-mismatch {
+            border-color: var(--danger);
+        }
+
+        .card-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .card-character {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .verdict {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 25px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .verdict.match { color: var(--success); }
+        .verdict.mismatch { color: var(--danger); }
+
+        .confidence {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <h1>Phần Mềm Luyện Phát Âm</h1>
+    
+    <div class="input-group">
+        <label for="targetInput">Nhập từ hoặc câu tiếng Trung bạn muốn nói:</label>
+        <input type="text" id="targetInput" class="zh-input" value="Thần thái" placeholder="Nhập chữ Hán tại đây...">
+    </div>
+
+    <div>
+        <button id="micButton" class="mic-btn">🎤</button>
+        <div id="btnStatus" class="btn-text">Nhấn nút để bắt đầu nói</div>
+    </div>
+
+    <div id="verdictText" class="verdict"></div>
+
+    <div id="comparisonZone" class="comparison-zone">
+        <div class="word-card target">
+            <div class="card-label">Từ mục tiêu</div>
+            <div id="targetDisplay" class="card-character">--</div>
+        </div>
+        <div id="resultCard" class="word-card">
+            <div class="card-label">Từ bạn đọc</div>
+            <div id="resultDisplay" class="card-character">--</div>
+        </div>
+    </div>
+    <div id="confidenceDisplay" class="confidence"></div>
+</div>
+
+<script>
+    // Khởi tạo bộ nhận diện giọng nói
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+        alert("Rất tiếc, trình duyệt của bạn không hỗ trợ Web Speech API. Hãy dùng thử Chrome hoặc Edge mới nhất!");
+    } else {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN';
+        recognition.interimResults = false;
+
+        const micButton = document.getElementById('micButton');
+        const btnStatus = document.getElementById('btnStatus');
+        const targetInput = document.getElementById('targetInput');
+        const comparisonZone = document.getElementById('comparisonZone');
+        const targetDisplay = document.getElementById('targetDisplay');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const resultCard = document.getElementById('resultCard');
+        const verdictText = document.getElementById('verdictText');
+        const confidenceDisplay = document.getElementById('confidenceDisplay');
+
+        let isRecording = false;
+
+        micButton.addEventListener('click', () => {
+            if (!targetInput.value.trim()) {
+                alert("Vui lòng nhập từ tiếng Trung trước!");
+                return;
+            }
+
+            if (!isRecording) {
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+        });
+
+        recognition.onstart = () => {
+            isRecording = true;
+            micButton.classList.add('recording');
+            micButton.innerHTML = "🛑";
+            btnStatus.textContent = "Hệ thống đang nghe... Hãy nói to, rõ ràng!";
+            verdictText.textContent = "";
+            comparisonZone.classList.remove('show');
+        };
+
+        recognition.onresult = (event) => {
+            const resultText = event.results[0][0].transcript.trim();
+            const targetText = targetInput.value.trim();
+            const confidence = (event.results[0][0].confidence * 100).toFixed(1);
+
+            // Hiển thị vùng so sánh dữ liệu
+            targetDisplay.textContent = targetText;
+            resultDisplay.textContent = resultText;
+            comparisonZone.classList.add('show');
+            confidenceDisplay.textContent = `Độ chính xác của máy nghe: ${confidence}%`;
+
+            // Xử lý logic đúng / sai bằng cách so sánh chuỗi
+            if (resultText === targetText) {
+                verdictText.textContent = "CHÍNH XÁC! 🎉";
+                verdictText.className = "verdict match";
+                resultCard.className = "word-card result-match";
+            } else {
+                verdictText.textContent = "CHƯA ĐÚNG! ❌";
+                verdictText.className = "verdict mismatch";
+                resultCard.className = "word-card result-mismatch";
+            }
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            micButton.classList.remove('recording');
+            micButton.innerHTML = "🎤";
+            btnStatus.textContent = "Nhấn nút để bắt đầu nói";
+        };
+
+        recognition.onerror = (event) => {
+            console.error(event.error);
+            btnStatus.textContent = "Lỗi nhận diện. Vui lòng thử lại!";
+        };
+    }
+</script>
+
+</body>
+</html>
